@@ -1,0 +1,22 @@
+[project]
+name = "python-fastapi"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "hq-mac",email = "1076084189@qq.com"}
+]
+requires-python = ">=3.13"
+dependencies = [
+]
+
+
+[tool.poetry]
+packages = [{ include = "src" }]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+dev = "src.main:dev"
+prod = "src.main:prod"
