@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pydantic import BaseModel, ConfigDict
 
 class UserCreate(BaseModel):
@@ -10,8 +12,8 @@ class UserUpdate(BaseModel):
 
 class UserResp(UserCreate):
     id: int
-    create_time: str | None = None
-    update_time: str | None = None
+    create_time: datetime | None = None
+    update_time: datetime | None = None
     # 支持直接用 ORM 实例解析成 Pydantic 对象。
     # ORM 实例：从数据库查出来的db_user，是 SQLAlchemy 封装的数据库对象，不能直接返回给前端。
     # Pydantic 对象：用来规范返回给前端的数据结构。
