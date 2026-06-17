@@ -12,34 +12,27 @@ router = create_router(prefix = '/users', tags = ['用户模块'])
 def get_svc():
     return UserService()
 
-@router.post("")
+@router.post("", response_model=UserResp)
 async def create_user(payload: UserCreate, db: AsyncSession = Depends(get_db), svc: UserService = Depends(get_svc)):
-    new_user = await svc.create(db, payload)
-    return UserResp.model_validate(new_user).model_dump(mode="json")
+    return await svc.create(db, payload)
 
-@router.get("/{user_id}")
+@router.get("/{user_id}", response_model=UserResp)
 async def get_user(user_id: int, db: AsyncSession = Depends(get_db), svc: UserService = Depends(get_svc)):
     user = await svc.get_by_id(user_id, db)
     if not user:
         raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="用户不存在")
-    return UserResp.model_validate(user).model_dump(mode="json")
+    return user
 
-@router.get("")
+@router.get("", response_model=list[UserResp])
 async def get_all_users(db: AsyncSession = Depends(get_db), svc: UserService = Depends(get_svc)):
-    users = await svc.get_all(db)
-    # UserResp.model_validate(user).model_dump() for user in users
-    data = []
-    for user in users:
-        data.append(UserResp.model_validate(user).model_dump(mode="json"))
-        
-    return data
+    return await svc.get_all(db)
 
-@router.put("/{user_id}")
+@router.put("/{user_id}", response_model=UserResp)
 async def update_user(user_id: int, payload: UserUpdate, svc: UserService = Depends(get_svc), db: AsyncSession = Depends(get_db)):
     user = await svc.update_by_id(user_id, payload, db)
     if not user:
         raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="用户不存在")
-    return UserResp.model_validate(user).model_dump(mode="json")
+    return user
 
 @router.delete("/{user_id}")
 async def delete_user(user_id: int, svc: UserService = Depends(get_svc), db: AsyncSession = Depends(get_db)):
