@@ -1,4 +1,4 @@
-from fastapi import Request, Response
+from fastapi import APIRouter, Request, Response
 from fastapi.routing import APIRoute
 
 from src.common.response import success
@@ -19,4 +19,4 @@ class ResponseRoute(APIRoute):
 
 
 def create_router(prefix: str = "", tags: list = None):
-    return APIRoute(prefix=prefix, tags=tags, route_class=ResponseRoute)
+    return APIRouter(prefix=prefix, tags=tags, route_class=ResponseRoute)

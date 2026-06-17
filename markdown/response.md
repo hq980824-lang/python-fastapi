@@ -47,18 +47,47 @@ def fail(msg='操作失败', code=HTTPStatus.BAD_REQUEST, data=None):
 
 ---
 
-## 二、成功响应的写法（controller 手动包装）
+## 二、成功响应自动包装（`src/common/route.py`）
 
-目前项目**没有做自动的成功响应拦截**，而是在每个 controller 里手动调用 `success()`：
+项目通过**自定义路由类 `ResponseRoute`** 自动包装成功响应，controller 里只需返回业务数据，外层的 `code/msg/data` 结构由路由自动套上。
 
 ```python
+from fastapi import APIRouter, Request, Response
+from fastapi.routing import APIRoute
+from src.common.response import success
+
+
+class ResponseRoute(APIRoute):
+    def get_route_handler(self):
+        original_handler = super().get_route_handler()
+
+        async def custom_handler(request: Request):
+            response = await original_handler(request)
+            # 已经是 Response（如手动返回的 JSONResponse）就原样放行
+            if isinstance(response, Response):
+                return response
+            # 否则把返回值塞进统一结构
+            return success(data=response).model_dump()
+        return custom_handler
+
+
+def create_router(prefix: str = "", tags: list = None):
+    return APIRouter(prefix=prefix, tags=tags, route_class=ResponseRoute)
+```
+
+> 注意：包装能力来自 `route_class=ResponseRoute`，必须挂在 **`APIRouter`**（路由分组）上。`APIRoute` 是单条路由、不接受 `prefix`，误用会报 `TypeError: APIRoute.__init__() got an unexpected keyword argument 'prefix'`。
+
+controller 用 `create_router` 创建路由器后，直接返回数据即可：
+
+```python
+router = create_router(prefix='/users', tags=['用户模块'])
+
 @router.get("/{user_id}")
 async def get_user(user_id: int, db: AsyncSession = Depends(get_db), svc: UserService = Depends(get_svc)):
     user = await svc.get_by_id(user_id, db)
     if not user:
         raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="用户不存在")
-    pydantic_user = UserResp.model_validate(user)   # ORM 对象 → Pydantic 对象
-    return success(data=pydantic_user.model_dump())  # 包装成统一结构
+    return UserResp.model_validate(user).model_dump(mode="json")  # 直接返回数据，无需手动 success()
 ```
 
 **数据流转过程：**
@@ -67,28 +96,16 @@ async def get_user(user_id: int, db: AsyncSession = Depends(get_db), svc: UserSe
 数据库查询
   → UserDB（SQLAlchemy ORM 对象，不能直接返回）
   → UserResp.model_validate(user)（靠 from_attributes=True 转成 Pydantic 对象）
-  → .model_dump()（转成 dict）
-  → success(data=...)（套上 code/msg/data 外壳）
+  → .model_dump(mode="json")（转成 dict，datetime 等转字符串）
+  → controller 返回
+  → ResponseRoute 自动套上 success(data=...) 外壳
 ```
 
 ---
 
-## 三、目前存在的问题与改进建议
-
-### 1. 成功响应仍是手动包装，存在重复
-
-每个 controller 都要写 `UserResp.model_validate(...).model_dump()` + `success(...)`，重复且容易漏。后续可考虑：
-
-- 用 FastAPI 的 `response_model` + 自定义中间件/`APIRoute` 统一包装，或
-- 封装一个依赖/装饰器自动套 `success()` 外壳。
-
-当前阶段手动包装可以接受，规模变大后建议收敛。
-
----
-
-## 四、小结
+## 三、小结
 
 | 关注点         | 现状                              | 状态   |
 | ----------- | ------------------------------- | ---- |
 | 统一响应结构      | `ResponseModel` + `success/fail` | 已实现 |
-| 成功响应自动化     | 手动包装                            | 可优化 |
+| 成功响应自动化     | `ResponseRoute` 自动包装            | 已实现 |

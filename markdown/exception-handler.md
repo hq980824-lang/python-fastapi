@@ -59,23 +59,11 @@ app.add_exception_handler(Exception, global_err_handler)
 
 ## 三、目前存在的问题与改进建议
 
-### 1. datetime 序列化风险（高优先级）
-
-异常 handler 用了 `fail(...).model_dump()` 再交给 `JSONResponse`。`model_dump()`（默认 `mode="python"`）返回的 dict 里如果含有 `datetime` 等非原生类型，`JSONResponse` 内部的 `json.dumps` 会直接报 `TypeError`。
-
-目前 `fail()` 的 `data` 默认是 `None`，暂时不会触发。但只要哪天往失败响应里塞带 datetime 的 data，就会炸。
-
-**建议**：统一改用 `model_dump(mode="json")`：
-
-```python
-return JSONResponse(content=fail(...).model_dump(mode="json"))
-```
-
-### 2. JSONResponse 没有设置 status_code
+### 1. JSONResponse 没有设置 status_code
 
 ```python
 # 现状：HTTP 状态码永远是 200，业务码塞在 body 的 code 里
-return JSONResponse(content=fail(msg=exc.detail, code=exc.status_code).model_dump())
+return JSONResponse(content=fail(msg=exc.detail, code=exc.status_code).model_dump(mode="json"))
 ```
 
 `JSONResponse` 没传 `status_code` 参数，所以 HTTP 层永远返回 200，真正的状态码只体现在响应体的 `code` 字段。如果希望 HTTP 状态码也准确（利于网关、监控、前端拦截器判断），应补上：
@@ -97,5 +85,5 @@ return JSONResponse(
 | --------- | -------------------- | ---- |
 | 业务异常处理    | `http_err_handler`   | 已实现 |
 | 服务器异常兜底   | `global_err_handler` | 已实现 |
-| datetime 序列化 | `model_dump()` 有隐患 | 待改进 |
+| datetime 序列化 | `model_dump(mode="json")` | 已实现 |
 | HTTP 状态码  | 失败响应恒为 200           | 待改进 |
