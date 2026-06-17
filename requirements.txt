@@ -7,9 +7,10 @@ fastapi==0.137.0
 h11==0.16.0
 httptools==0.8.0
 idna==3.18
-pydantic==2.13.4
+pydantic[email]==2.13.4
 pydantic-settings==2.14.1
 pydantic_core==2.46.4
+PyJWT==2.13.0
 python-dotenv==1.2.2
 PyMySQL==1.2.0
 PyYAML==6.0.3

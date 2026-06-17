@@ -3,13 +3,15 @@ from fastapi import FastAPI, HTTPException
 from src.common.exception import global_err_handler, http_err_handler, value_err_handler
 from src.config.settings import settings
 from src.modules.users.user_controller import router as user_router
+from src.modules.auth.auth_controller import router as auth_router
 
-app = FastAPI(title=settings.app_name)
+app = FastAPI(title=settings.APP_NAME)
 
 app.include_router(user_router)
+app.include_router(auth_router)
 
 def dev():
-    uvicorn.run("src.main:app", reload=True, host="0.0.0.0", port=8106)
+    uvicorn.run("src.main:app", reload=True, host="0.0.0.0", port=settings.APP_PORT)
 
 def prod():
     uvicorn.run("src.main:app", host="0.0.0.0", port=8000, workers=4, log_level="warning")
