@@ -18,7 +18,7 @@ async def create_user(payload: UserCreate, db: AsyncSession = Depends(get_db), s
 
 @router.get("/{user_id}", response_model=UserResp)
 async def get_user(user_id: int, db: AsyncSession = Depends(get_db), svc: UserService = Depends(get_svc)):
-    user = await svc.get_by_id(user_id, db)
+    user = await svc.get_by_id(db, user_id)
     if not user:
         raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="用户不存在")
     return user
@@ -29,14 +29,14 @@ async def get_all_users(db: AsyncSession = Depends(get_db), svc: UserService = D
 
 @router.put("/{user_id}", response_model=UserResp)
 async def update_user(user_id: int, payload: UserUpdate, svc: UserService = Depends(get_svc), db: AsyncSession = Depends(get_db)):
-    user = await svc.update_by_id(user_id, payload, db)
+    user = await svc.update_by_id(db, user_id, payload)
     if not user:
         raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="用户不存在")
     return user
 
 @router.delete("/{user_id}")
 async def delete_user(user_id: int, svc: UserService = Depends(get_svc), db: AsyncSession = Depends(get_db)):
-    success_flag = await svc.delete_by_id(user_id, db)
+    success_flag = await svc.delete_by_id(db, user_id)
     if not success_flag:
         raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="用户不存在或删除失败")
     return "删除用户成功"

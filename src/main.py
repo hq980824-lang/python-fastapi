@@ -1,6 +1,6 @@
 import uvicorn
 from fastapi import FastAPI, HTTPException
-from src.common.exception import global_err_handler, http_err_handler
+from src.common.exception import global_err_handler, http_err_handler, value_err_handler
 from src.config.settings import settings
 from src.modules.users.user_controller import router as user_router
 
@@ -15,4 +15,5 @@ def prod():
     uvicorn.run("src.main:app", host="0.0.0.0", port=8000, workers=4, log_level="warning")
 
 app.add_exception_handler(HTTPException, http_err_handler)
+app.add_exception_handler(ValueError, value_err_handler)
 app.add_exception_handler(Exception, global_err_handler)
