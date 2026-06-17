@@ -15,27 +15,32 @@ class UserService:
         return new_user
 
     async def get_by_id(self, user_id: int, db: AsyncSession):
-        stmt = select(UserDB).where(UserDB.id == user_id)
-        result = await db.execute(stmt)
-        return result.scalar_one_or_none()
+        result = await db.get(UserDB, user_id)
+        return result
 
     async def get_all(self, db: AsyncSession):
         stmt = select(UserDB)
         result = await db.execute(stmt)
-        user_list = result.scalars().all()
-        return user_list
+        return result.scalars().all()
 
-    def update_by_id(self, user_id: int, payload: UserUpdate):
-        for user in users:
-            if user['id'] == user_id:
-                user.update(payload.model_dump(exclude_unset=True))
-                return user
-        return None
+    async def update_by_id(self, user_id: int, payload: UserUpdate, db: AsyncSession):
+        db_user = await self.get_by_id(user_id, db)
+        if not db_user:
+            return None
+        
+        update_dict = payload.model_dump(exclude_unset=True)
 
-    def delete_by_id(self, user_id: int):
-        global users
-        for index, user in enumerate(users):
-            if user['id'] == user_id:
-                users.pop(index)
-                return True
-        return False
+        for key, value in update_dict.items():
+            setattr(db_user, key, value)
+
+        await db.commit()
+        await db.refresh(db_user)
+        return db_user
+
+    async def delete_by_id(self, user_id: int, db: AsyncSession):
+        db_user = await self.get_by_id(user_id, db)
+        if not db_user:
+            return False
+        await db.delete(db_user)
+        await db.commit()
+        return True

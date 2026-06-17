@@ -27,15 +27,15 @@ async def get_all_users(db: AsyncSession = Depends(get_db), svc: UserService = D
     return users
 
 @router.put("/{user_id}")
-def update_user(user_id: int, payload: UserUpdate, svc: UserService = Depends(get_svc)):
-    user = svc.update_by_id(user_id, payload)
+async def update_user(user_id: int, payload: UserUpdate, svc: UserService = Depends(get_svc), db: AsyncSession = Depends(get_db)):
+    user = await svc.update_by_id(user_id, payload, db)
     if not user:
         raise HTTPException(status_code=400, detail="用户不存在")
     return user
 
 @router.delete("/{user_id}")
-def delete_user(user_id: int, svc: UserService = Depends(get_svc)):
-    success = svc.delete_by_id(user_id)
+def delete_user(user_id: int, svc: UserService = Depends(get_svc), db: AsyncSession = Depends(get_db)):
+    success = svc.delete_by_id(user_id, db)
     if not success:
         raise HTTPException(status_code=400, detail="用户不存在或删除失败")
     return {"message": "用户删除成功"}
