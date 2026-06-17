@@ -2,6 +2,7 @@ from http import HTTPStatus
 from fastapi import Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.common.pagination import PageQuery, PageResp
 from src.common.route import create_router
 from src.config.db import get_db
 from src.modules.users.user_dto import UserCreate, UserResp, UserUpdate
@@ -23,9 +24,9 @@ async def get_user(user_id: int, db: AsyncSession = Depends(get_db), svc: UserSe
         raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="用户不存在")
     return user
 
-@router.get("", response_model=list[UserResp])
-async def get_all_users(db: AsyncSession = Depends(get_db), svc: UserService = Depends(get_svc)):
-    return await svc.get_all(db)
+@router.get("", response_model=PageResp[UserResp])
+async def get_all_users(params: PageQuery = Depends(), db: AsyncSession = Depends(get_db), svc: UserService = Depends(get_svc)):
+    return await svc.get_all(db, params)
 
 @router.put("/{user_id}", response_model=UserResp)
 async def update_user(user_id: int, payload: UserUpdate, svc: UserService = Depends(get_svc), db: AsyncSession = Depends(get_db)):

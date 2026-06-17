@@ -19,4 +19,3 @@ class UserResp(UserCreate):
     # Pydantic 对象：用来规范返回给前端的数据结构。
     # from_attributes=True：让UserResp能直接读取db_user里的字段，不用手动逐个赋值
     model_config = ConfigDict(from_attributes=True)
-

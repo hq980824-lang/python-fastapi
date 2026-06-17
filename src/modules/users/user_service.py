@@ -1,6 +1,7 @@
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
+from src.common.pagination import PageQuery
 from src.modules.users.user_dto import UserCreate, UserUpdate
 from src.modules.users.user_model import UserDB
 
@@ -19,10 +20,21 @@ class UserService:
     async def get_by_id(self, db: AsyncSession, user_id: int):
         return await db.get(UserDB, user_id)
 
-    async def get_all(self, db: AsyncSession):
-        stmt = select(UserDB)
+    async def get_all(self, db: AsyncSession, params: PageQuery):
+        count_stmt = select(func.count(UserDB.id))
+        total = await db.scalar(count_stmt)
+
+        offset = (params.page - 1) * params.size
+        stmt = select(UserDB).offset(offset).limit(params.size)
         result = await db.execute(stmt)
-        return result.scalars().all()
+        records = result.scalars().all()
+        
+        return {
+            "records": records,
+            "total": total,
+            "page": params.page,
+            "size": params.size
+        }
 
     async def update_by_id(self, db: AsyncSession, user_id: int, payload: UserUpdate):
         db_user = await self.get_by_id(db, user_id)
