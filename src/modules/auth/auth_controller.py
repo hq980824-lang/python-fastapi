@@ -33,10 +33,10 @@ async def email_login(dto: EmailLoginDto, redis: Redis = Depends(get_redis)):
     if code is None:
         raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="清先获取邮箱验证码")
     if code != dto.code:
-       raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="验证码错误")
+        raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="验证码错误")
 
     token = JwtUtil.create_access_token(subject=dto.email)
-    RedisUtil.delete_value(redis, f"verify_code:{dto.email}")
+    await RedisUtil.delete_value(redis, f"verify_code:{dto.email}")
 
     return {
         "token": f"Bearer {token}"
