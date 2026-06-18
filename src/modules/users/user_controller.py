@@ -2,10 +2,12 @@ from http import HTTPStatus
 from fastapi import Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.common.dependencies import get_current_user
 from src.common.pagination import PageQuery, PageResp
 from src.common.route import create_router
 from src.config.db import get_db
 from src.modules.users.user_dto import UserCreate, UserResp, UserUpdate
+from src.modules.users.user_model import UserDB
 from src.modules.users.user_service import UserService
 
 router = create_router(prefix = '/users', tags = ['用户模块'])
@@ -16,6 +18,10 @@ def get_svc():
 @router.post("", response_model=UserResp)
 async def create_user(payload: UserCreate, db: AsyncSession = Depends(get_db), svc: UserService = Depends(get_svc)):
     return await svc.create(db, payload)
+
+@router.get("/profile", response_model=UserResp)
+async def get_profile(current_user: UserDB = Depends(get_current_user)):
+    return current_user
 
 @router.get("/{user_id}", response_model=UserResp)
 async def get_user(user_id: int, db: AsyncSession = Depends(get_db), svc: UserService = Depends(get_svc)):

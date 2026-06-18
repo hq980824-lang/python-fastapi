@@ -20,6 +20,12 @@ class UserService:
     async def get_by_id(self, db: AsyncSession, user_id: int):
         return await db.get(UserDB, user_id)
 
+    async def get_by_email(self, db: AsyncSession, email: str):
+        stmt = select(UserDB).where(UserDB.email == email)
+        result = await db.execute(stmt)
+        user = result.scalars().first()
+        return user
+
     async def get_all(self, db: AsyncSession, params: PageQuery):
         count_stmt = select(func.count(UserDB.id))
         total = await db.scalar(count_stmt)
