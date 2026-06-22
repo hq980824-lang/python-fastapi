@@ -1,6 +1,7 @@
 
 
 from sqlalchemy import Column, DateTime, Integer, String, func
+from sqlalchemy.orm import relationship
 from src.config.db import Base
 
 
@@ -12,4 +13,6 @@ class UserDB(Base):
     email = Column(String(100), unique=True, nullable=False, index=True, comment="邮箱")
     create_time = Column(DateTime, server_default=func.now(), comment="创建时间")
     update_time = Column(DateTime, server_default=func.now(), onupdate=func.now(), comment="更新时间")
+
+    posts = relationship('PostDB', back_populates='author')
 
