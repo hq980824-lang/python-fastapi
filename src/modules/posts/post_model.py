@@ -1,6 +1,7 @@
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Text, func
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Text, func, Enum as SQLEnum
 from sqlalchemy.orm import relationship
 from src.config.db import Base
+from src.modules.posts.post_dto import PostStatus
 
 
 class PostDB(Base):
@@ -12,7 +13,9 @@ class PostDB(Base):
 
     author_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True, comment="作者ID")
 
-    create_time = Column(DateTime, server_default= func.now(), comment="创建时间")
+    create_time = Column(DateTime, server_default = func.now(), comment="创建时间")
     update_time = Column(DateTime, server_default = func.now(), onupdate = func.now(), comment="更新时间")
+
+    status = Column(SQLEnum(PostStatus), default=PostStatus.DRAFT, nullable=False, comment="状态")
 
     author = relationship("UserDB", back_populates="posts")
