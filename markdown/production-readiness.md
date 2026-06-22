@@ -3,7 +3,7 @@
 > 对照 20 项生产级能力清单，逐项核对当前代码后标注状态。
 > 状态说明：✅ 已实现 ｜ 🟡 部分实现 ｜ ⬜ 未开始
 
-最后核对时间：2026-06-18
+最后核对时间：2026-06-22
 
 ---
 
@@ -17,12 +17,12 @@
 | 4  | 接口 Schema | 🟡 |
 | 5  | 统一响应格式   | ✅ |
 | 6  | 异常处理     | 🟡 |
-| 7  | 日志系统     | ⬜ |
+| 7  | 日志系统     | 🟡 |
 | 8  | 认证与授权    | 🟡 |
 | 9  | 安全加固     | ⬜ |
 | 10 | 测试体系     | ⬜ |
 | 11 | API 文档   | 🟡 |
-| 12 | 健康检查     | ⬜ |
+| 12 | 健康检查     | ✅ |
 | 13 | 部署能力     | ⬜ |
 | 14 | CI/CD    | ⬜ |
 | 15 | 代码质量工具   | 🟡 |
@@ -48,6 +48,21 @@
 - 成功响应：`ResponseModel` + `ResponseRoute` 自动包装成 `{code, msg, data}`（`response.py`、`route.py`）
 - 错误响应：异常 handler 复用同一结构
 - 详见 `response.md`
+
+### 12. 健康检查 ✅
+
+- **存活探针** `/health`：不查任何依赖，能响应即返 `{"status":"ok"}`（依赖抖动时不该重启进程）
+- **就绪探针** `/ready`：检查 Redis、MySQL 连通性，任一不通返 **503** + `{"status":"not_ready","checks":{...}}`，供 K8s / 负载均衡摘流量
+- 检查逻辑抽到 `health_service.py`（`check_redis` / `check_mysql` 返回 bool），lifespan 与 `/ready` 共用：lifespan 失败 `SystemExit` 不让带病启动，`/ready` 失败标记 down + 503
+- 已实测：正常态 200、打桩依赖失败态 503 均符合预期
+
+### 7. 日志系统 🟡
+
+- 标准库 `logging` + 自定义 `JsonFormatter`：日志输出为一行 JSON（`time/level/logger/msg/trace_id`，异常带 `exc` 堆栈），中文不转义
+- **Trace ID 链路追踪**：`TraceIDMiddleware` 每个请求生成 16 位 trace_id（或沿用上游 `X-Trace-Id`），经 `contextvars` 注入，全程日志自动携带、响应头回写
+- `setup_logging()` 在 app 创建前接管根 logger；`print` 全部替换为 `logger`
+- 详见 `logging-trace-id.md`
+- **缺口**：uvicorn 自身访问日志（`uvicorn.access`）仍是纯文本未统一；业务 service / controller 尚未铺日志；无日志落盘 + 轮转（现靠 journalctl）；无日志分级按环境切换（dev/prod 同级别）
 
 ### 1. 项目结构规范化 🟡
 
@@ -113,10 +128,11 @@
 
 这几项缺了，服务上线就是裸奔，建议最先补。
 
-1. **健康检查（#12）** — 加 `/health`（存活）和 `/ready`（含数据库连通性检查）。K8s / 负载均衡探针强依赖，工作量很小，收益立竿见影。
-2. **日志系统（#7）** — 结构化 JSON 日志 + 请求 ID（Trace ID）中间件 + 日志分级。出问题能定位，是运维的最低保障。
-3. **安全加固（#9）** — 至少先做 CORS 白名单、请求体大小限制、安全响应头。现在 `main.py` 一个中间件都没有，跨域和基础防护是空的。
-4. **认证与授权补全（#8）** — JWT 登录与 `get_current_user` 已就绪。剩余：密码哈希（passlib/bcrypt）若要支持密码登录、token 刷新与登出黑名单（可复用已封装的 Redis）、RBAC 角色权限。
+1. **安全加固（#9）** — 至少先做 CORS 白名单、请求体大小限制、安全响应头。现在 `main.py` 一个中间件都没有，跨域和基础防护是空的。
+2. **认证与授权补全（#8）** — JWT 登录与 `get_current_user` 已就绪。剩余：密码哈希（passlib/bcrypt）若要支持密码登录、token 刷新与登出黑名单（可复用已封装的 Redis）、RBAC 角色权限。
+
+> ✅ **健康检查（#12）已完成**（2026-06-22）：`/health` + `/ready`，详见上方明细。
+> 🟡 **日志系统（#7）核心已完成**（2026-06-22）：JSON 日志 + Trace ID 中间件，详见 `logging-trace-id.md`。剩 uvicorn 访问日志统一、业务铺日志、落盘轮转。
 
 ### P1 — 质量与协作的保障
 
