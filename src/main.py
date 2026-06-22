@@ -2,6 +2,7 @@ from contextlib import asynccontextmanager
 import logging
 import uvicorn
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from src.common.exception import global_err_handler, http_err_handler, value_err_handler
 from src.common.logger import setup_logging
 from src.common.middleware import TraceIDMiddleware
@@ -51,6 +52,13 @@ setup_logging()
 app = FastAPI(title=settings.APP_NAME, lifespan=lifespan)
 
 app.add_middleware(TraceIDMiddleware)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.cors_origins,   # 白名单,允许的前端域名
+    allow_credentials=True,                      # 允许带 cookie/认证头
+    allow_methods=["*"],                         # 允许的 HTTP 方法
+    allow_headers=["*"],                         # 允许的请求头
+)
 
 app.include_router(user_router)
 app.include_router(auth_router)

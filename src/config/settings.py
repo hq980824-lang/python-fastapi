@@ -38,6 +38,8 @@ class Settings(BaseSettings):
     REDIS_DB: int
     REDIS_MAX_CONNECTIONS: int
 
+    CORS_ALLOW_ORIGINS: str = ""
+
     @property
     def mysql_url(self):
         # mysql+aiomysql://用户名:密码@地址:端口/数据库名?charset=utf8mb4
@@ -52,6 +54,12 @@ class Settings(BaseSettings):
         # redis://:password@host:port/db
         auth = f":{self.REDIS_PASSWORD}@" if self.REDIS_PASSWORD else ""
         return f"redis://{auth}{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
+
+    @property
+    def cors_origins(self) -> list[str]:
+        if not self.CORS_ALLOW_ORIGINS:
+            return []
+        return [o.strip() for o in self.CORS_ALLOW_ORIGINS.split(",")]
 
 
 settings = Settings()
