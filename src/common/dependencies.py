@@ -1,9 +1,11 @@
 from http import HTTPStatus
+from typing import Annotated
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.config.db import get_db
+from src.modules.users.user_model import UserDB
 from src.modules.users.user_service import UserService
 from src.utils.jwt_util import JwtUtil
 
@@ -23,3 +25,6 @@ async def get_current_user(
         raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail="用户不存在")
 
     return user
+
+DbDep = Annotated[AsyncSession, Depends(get_db)]
+CurrentUser = Annotated[UserDB, Depends(get_current_user)]

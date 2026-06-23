@@ -14,7 +14,6 @@ from src.modules.health.health_service import check_mysql, check_redis
 from src.modules.users.user_controller import router as user_router
 from src.modules.auth.auth_controller import router as auth_router
 from src.modules.posts.post_controller import router as post_router
-import src.modules.posts.post_model # noqa: F401
 
 logger = logging.getLogger(__name__)
 
