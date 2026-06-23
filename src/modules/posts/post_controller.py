@@ -7,16 +7,13 @@ from src.common.route import create_router
 from src.modules.posts.post_dto import PostCreate, PostResp
 from src.modules.posts.post_service import PostService
 
-
 router = create_router(prefix="/posts", tags=["文章模块"])
 
 svc = PostService()
 
-
 @router.post("", response_model=PostResp)
 async def create_post(payload: PostCreate, current_user: CurrentUser, db: DbDep):
     return await svc.create(db, payload, author_id=current_user.id)
-
 
 @router.get("/{post_id}", response_model=PostResp)
 async def get_post(post_id: int, db: DbDep):
@@ -26,5 +23,5 @@ async def get_post(post_id: int, db: DbDep):
     return post
 
 @router.get("", response_model=PageResp[PostResp])
-async def get_all_posts(db: DbDep, params: PageQuery = Depends()):
-    return await svc.get_all(db, params)
+async def get_all_posts(db: DbDep, params: PageQuery = Depends(), author_id: int | None = None):
+    return await svc.get_all(db, params, author_id=author_id)

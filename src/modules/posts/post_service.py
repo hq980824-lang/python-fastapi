@@ -23,15 +23,23 @@ class PostService:
         result = await db.execute(stmt)
         return result.scalars().first()
 
-    async def get_all(self, db: AsyncSession, params: PageQuery):
-        total = await db.scalar(select(func.count(PostDB.id)))
+    async def get_all(self, db: AsyncSession, params: PageQuery, author_id: int | None = None):
+        total_stmt = select(func.count(PostDB.id))
+
+        if author_id is not None:
+            total_stmt = total_stmt.where(PostDB.author_id == author_id)
+            
+        total = await db.scalar(total_stmt)
 
         offset = (params.page - 1) * params.size
-        stmt =  (select(PostDB)
-                .options(selectinload(PostDB.author))
-                .offset(offset)
-                .limit(params.size))
-                
+        stmt = (select(PostDB)
+               .options(selectinload(PostDB.author))
+               .offset(offset)
+               .limit(params.size))
+
+        if author_id is not None:
+            stmt = stmt.where(PostDB.author_id == author_id)
+
         result = await db.execute(stmt)
         records = result.scalars().all()
 
