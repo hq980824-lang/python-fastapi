@@ -2,7 +2,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from src.common.pagination import PageQuery
-from src.modules.posts.post_dto import PostCreate
+from src.modules.posts.post_dto import PostCreate, PostResp, PostUpdate
 from src.modules.posts.post_model import PostDB
 
 
@@ -28,7 +28,7 @@ class PostService:
 
         if author_id is not None:
             total_stmt = total_stmt.where(PostDB.author_id == author_id)
-            
+
         total = await db.scalar(total_stmt)
 
         offset = (params.page - 1) * params.size
@@ -49,3 +49,18 @@ class PostService:
             "page": params.page,
             "size": params.size
         }
+
+    async def update_post(self, db: AsyncSession, payload: PostUpdate, db_post: PostDB):
+        update_dict = payload.model_dump(exclude_unset=True)
+
+        for key, value in update_dict.items():
+            setattr(db_post, key, value)
+        
+        await db.commit()
+        return await self.get_by_id(db, db_post.id)
+
+    async def delete_post(self, db: AsyncSession, db_post: PostDB):
+        await db.delete(db_post)
+        await db.commit()
+        return True
+            

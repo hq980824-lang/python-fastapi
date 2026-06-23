@@ -4,7 +4,7 @@ from fastapi import Depends, HTTPException
 from src.common.dependencies import CurrentUser, DbDep
 from src.common.pagination import PageQuery, PageResp
 from src.common.route import create_router
-from src.modules.posts.post_dto import PostCreate, PostResp
+from src.modules.posts.post_dto import PostCreate, PostResp, PostUpdate
 from src.modules.posts.post_service import PostService
 
 router = create_router(prefix="/posts", tags=["文章模块"])
@@ -25,3 +25,26 @@ async def get_post(post_id: int, db: DbDep):
 @router.get("", response_model=PageResp[PostResp])
 async def get_all_posts(db: DbDep, params: PageQuery = Depends(), author_id: int | None = None):
     return await svc.get_all(db, params, author_id=author_id)
+
+@router.put("/{post_id}", response_model=PostResp)
+async def update_post(post_id: int, payload: PostUpdate, db: DbDep, current_user: CurrentUser):
+    db_post = await svc.get_by_id(db, post_id)
+    if not db_post:
+        raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="文章不存在")
+
+    if db_post.author_id != current_user.id:
+        raise HTTPException(status_code=HTTPStatus.FORBIDDEN, detail="该文章不属于您")
+
+    return await svc.update_post(db, payload=payload, db_post=db_post)
+
+@router.delete("/{post_id}")
+async def delete_by_id(post_id: int, db: DbDep, current_user: CurrentUser):
+    db_post = await svc.get_by_id(db, post_id)
+
+    if not db_post:
+        raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="文章不存在")
+
+    if db_post.author_id != current_user.id:
+        raise HTTPException(status_code=HTTPStatus.FORBIDDEN, detail="该文章不属于您")
+    
+    return await svc.delete_post(db, db_post=db_post)
