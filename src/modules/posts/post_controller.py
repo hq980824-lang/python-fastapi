@@ -1,7 +1,8 @@
 from http import HTTPStatus
-from fastapi import HTTPException
+from fastapi import Depends, HTTPException
 
 from src.common.dependencies import CurrentUser, DbDep
+from src.common.pagination import PageQuery, PageResp
 from src.common.route import create_router
 from src.modules.posts.post_dto import PostCreate, PostResp
 from src.modules.posts.post_service import PostService
@@ -23,3 +24,7 @@ async def get_post(post_id: int, db: DbDep):
     if not post:
         raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="文章不存在")
     return post
+
+@router.get("", response_model=PageResp[PostResp])
+async def get_all_posts(db: DbDep, params: PageQuery = Depends()):
+    return await svc.get_all(db, params)

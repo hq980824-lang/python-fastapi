@@ -1,6 +1,7 @@
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
+from src.common.pagination import PageQuery
 from src.modules.posts.post_dto import PostCreate
 from src.modules.posts.post_model import PostDB
 
@@ -21,3 +22,22 @@ class PostService:
         )
         result = await db.execute(stmt)
         return result.scalars().first()
+
+    async def get_all(self, db: AsyncSession, params: PageQuery):
+        total = await db.scalar(select(func.count(PostDB.id)))
+
+        offset = (params.page - 1) * params.size
+        stmt =  (select(PostDB)
+                .options(selectinload(PostDB.author))
+                .offset(offset)
+                .limit(params.size))
+                
+        result = await db.execute(stmt)
+        records = result.scalars().all()
+
+        return {
+            "records": records,
+            "total": total,
+            "page": params.page,
+            "size": params.size
+        }
