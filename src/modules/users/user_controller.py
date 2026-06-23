@@ -23,26 +23,30 @@ async def create_user(payload: UserCreate, db: AsyncSession = Depends(get_db), s
 async def get_profile(current_user: UserDB = Depends(get_current_user)):
     return current_user
 
-@router.get("/{user_id}", response_model=UserResp)
+@router.get("/{user_id}", response_model=UserResp, dependencies=[Depends(get_current_user)])
 async def get_user(user_id: int, db: AsyncSession = Depends(get_db), svc: UserService = Depends(get_svc)):
     user = await svc.get_by_id(db, user_id)
     if not user:
         raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="用户不存在")
     return user
 
-@router.get("", response_model=PageResp[UserResp])
+@router.get("", response_model=PageResp[UserResp], dependencies=[Depends(get_current_user)])
 async def get_all_users(params: PageQuery = Depends(), db: AsyncSession = Depends(get_db), svc: UserService = Depends(get_svc)):
     return await svc.get_all(db, params)
 
 @router.put("/{user_id}", response_model=UserResp)
-async def update_user(user_id: int, payload: UserUpdate, svc: UserService = Depends(get_svc), db: AsyncSession = Depends(get_db)):
+async def update_user(user_id: int, payload: UserUpdate, current_user: UserDB = Depends(get_current_user), svc: UserService = Depends(get_svc), db: AsyncSession = Depends(get_db)):
+    if current_user.id != user_id:
+        raise HTTPException(status_code=HTTPStatus.FORBIDDEN, detail="只能修改自己的信息")
     user = await svc.update_by_id(db, user_id, payload)
     if not user:
         raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="用户不存在")
     return user
 
 @router.delete("/{user_id}")
-async def delete_user(user_id: int, svc: UserService = Depends(get_svc), db: AsyncSession = Depends(get_db)):
+async def delete_user(user_id: int, current_user: UserDB = Depends(get_current_user), svc: UserService = Depends(get_svc), db: AsyncSession = Depends(get_db)):
+    if current_user.id != user_id:
+        raise HTTPException(status_code=HTTPStatus.FORBIDDEN, detail="只能删除自己的账号")
     success_flag = await svc.delete_by_id(db, user_id)
     if not success_flag:
         raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="用户不存在或删除失败")
