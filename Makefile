@@ -31,3 +31,7 @@ history:  ## 查看迁移历史
 
 showtable:  ## 查看某张表结构：make showtable t=posts
 	ENV=$(ENV) python scripts/show_table.py $(t)
+
+install:  ## 装依赖并同步到 requirements: make install p=openpyxl
+	pip install $(p) && pip freeze | grep -i $(p) >> requirements.txt
+
