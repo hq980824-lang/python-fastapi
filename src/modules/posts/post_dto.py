@@ -31,3 +31,6 @@ class PostUpdate(BaseModel):
     title: str | None = None
     content: str | None = None
     status: PostStatus | None = None
+
+class PostBatchCreate(BaseModel):
+    posts: list[PostCreate]

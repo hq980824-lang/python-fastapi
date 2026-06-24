@@ -4,7 +4,7 @@ from fastapi import Depends, HTTPException
 from src.common.dependencies import CurrentUser, DbDep
 from src.common.pagination import PageQuery, PageResp
 from src.common.route import create_router
-from src.modules.posts.post_dto import PostCreate, PostResp, PostUpdate
+from src.modules.posts.post_dto import PostBatchCreate, PostCreate, PostResp, PostUpdate
 from src.modules.posts.post_model import PostDB
 from src.modules.posts.post_service import PostService
 
@@ -45,3 +45,9 @@ async def update_post(payload: PostUpdate, db: DbDep, db_post: PostDB = Depends(
 @router.delete("/{post_id}")
 async def delete_post(db: DbDep, db_post: PostDB = Depends(get_own_post)):    
     return await svc.delete_post(db, db_post=db_post)
+
+@router.post("/batch", response_model=list[PostResp])
+async def create_batch_posts(payloads: PostBatchCreate, current_user: CurrentUser, db: DbDep):
+    if not payloads.posts:
+        raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="文章不能为空")
+    return await svc.create_batch(db, payloads=payloads, author_id=current_user.id)

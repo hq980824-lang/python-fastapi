@@ -2,7 +2,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from src.common.pagination import PageQuery
-from src.modules.posts.post_dto import PostCreate, PostResp, PostUpdate
+from src.modules.posts.post_dto import PostBatchCreate, PostCreate, PostResp, PostUpdate
 from src.modules.posts.post_model import PostDB
 
 
@@ -64,3 +64,12 @@ class PostService:
         await db.commit()
         return True
             
+    async def create_batch(self, db: AsyncSession, payloads: PostBatchCreate, author_id: int):
+        new_posts = [PostDB(**p.model_dump(), author_id = author_id) for p in payloads.posts]
+        db.add_all(new_posts)
+        await db.commit()
+
+        ids = [p.id for p in new_posts]
+        stmt = select(PostDB).where(PostDB.id.in_(ids))
+        result = await db.execute(stmt)
+        return result.scalars().all()
