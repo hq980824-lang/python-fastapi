@@ -1,6 +1,6 @@
 from io import BytesIO
 from fastapi import UploadFile
-from openpyxl import load_workbook
+from openpyxl import Workbook, load_workbook
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -131,3 +131,28 @@ class PostService:
         db.add_all(to_create)
         await db.commit()
         return {"success": len(to_create), "failed": len(errors), "errors": errors}
+ 
+    async def get_all_for_export(self, db: AsyncSession):
+        stmt = (
+          select(PostDB)
+          .options(selectinload(PostDB.author))  
+          .order_by(PostDB.id)                   
+        )
+        result = await db.execute(stmt)
+        return result.scalars().all()
+
+    
+    async def export_to_excel(self, db: AsyncSession):
+        db_posts = await self.get_all_for_export(db)
+        
+        wb = Workbook()
+        ws = wb.active
+        ws.append(["标题", "内容", "作者邮箱", "状态"])
+
+        for post in db_posts:
+            ws.append([post.title, post.content, post.author.email, post.status.value])
+
+        buffer = BytesIO()
+        wb.save(buffer)
+        buffer.seek(0)
+        return buffer

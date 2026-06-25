@@ -1,5 +1,6 @@
 from http import HTTPStatus
 from fastapi import Depends, HTTPException, UploadFile
+from fastapi.responses import StreamingResponse
 
 from src.common.dependencies import CurrentUser, DbDep, get_current_user
 from src.common.pagination import PageQuery, PageResp
@@ -56,3 +57,11 @@ async def create_batch_posts(payloads: PostBatchCreate, current_user: CurrentUse
 async def import_posts(file: UploadFile, db: DbDep):
    return await svc.import_from_excel(db, file=file)
 
+@router.post("/export", dependencies=[Depends(get_current_user)])
+async def export_posts(db: DbDep):
+  buffer = await svc.export_to_excel(db)
+  return StreamingResponse(
+    buffer,
+    media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    headers={"Content-Disposition": "attachment; filename=posts.xlsx"}
+  )
