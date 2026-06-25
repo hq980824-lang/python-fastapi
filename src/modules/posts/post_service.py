@@ -87,14 +87,17 @@ class PostService:
         return result.scalars().all()
 
     async def import_from_excel(self, db: AsyncSession, file: UploadFile):
+        if not file.filename.endswith(".xlsx"):
+            raise ValueError('只支持 .xlsx 格式的文件')
+
         content = await file.read()
         workbook = load_workbook(BytesIO(content))
         sheet = workbook.active
-        emails = []
-        for row in sheet.iter_rows(min_row=2, values_only=True):
-            title, content, email = row
-        if email and email not in emails:
-            emails.append(email)
+
+        # [[title, content, email]]
+        data = [list(row) for row in sheet.iter_rows(min_row=2, values_only=True)]
+
+        emails = list(dict.fromkeys([row[-1] for row in data if row[-1]]))
 
         stmt = select(UserDB).where(UserDB.email.in_(emails))
         users = (await db.execute(stmt)).scalars().all()
@@ -104,10 +107,12 @@ class PostService:
         to_create = []
         errors = []
 
-        for idx, row in enumerate(
-            sheet.iter_rows(min_row=2, values_only=True), start=2
-        ):
-            title, content, email = row
+        for idx, row in enumerate(data, start=2):
+            if len(row) < 3:
+                errors.append({ "行": idx, "原因": "列数不足"})
+                continue
+
+            title, content, email = row[0], row[1], row[2]
 
             if not title:
                 errors.append({"行": idx, "原因": "标题为空"})
@@ -120,6 +125,9 @@ class PostService:
 
             to_create.append(PostDB(title=title, content=content, author_id=author.id))
 
+        if not to_create and not errors:
+            raise ValueError('文件中没有数据行')
+
         db.add_all(to_create)
         await db.commit()
-        return {"成功": len(to_create), "失败": len(errors), "失败详情": errors}
+        return {"success": len(to_create), "failed": len(errors), "errors": errors}

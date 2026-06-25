@@ -1,10 +1,10 @@
 from http import HTTPStatus
 from fastapi import Depends, HTTPException, UploadFile
 
-from src.common.dependencies import CurrentUser, DbDep
+from src.common.dependencies import CurrentUser, DbDep, get_current_user
 from src.common.pagination import PageQuery, PageResp
 from src.common.route import create_router
-from src.modules.posts.post_dto import PostBatchCreate, PostCreate, PostResp, PostUpdate
+from src.modules.posts.post_dto import ImportResult, PostBatchCreate, PostCreate, PostResp, PostUpdate
 from src.modules.posts.post_model import PostDB
 from src.modules.posts.post_service import PostService
 
@@ -52,7 +52,7 @@ async def create_batch_posts(payloads: PostBatchCreate, current_user: CurrentUse
         raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="文章不能为空")
     return await svc.create_batch(db, payloads=payloads, author_id=current_user.id)
 
-@router.post("/import")
+@router.post("/import", response_model=ImportResult, dependencies=[Depends(get_current_user)])
 async def import_posts(file: UploadFile, db: DbDep):
-   return svc.import_from_excel(db, file=file)
+   return await svc.import_from_excel(db, file=file)
 
