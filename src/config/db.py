@@ -8,17 +8,15 @@ mysql_engine = create_async_engine(
     max_overflow=settings.DB_MAX_OVERFLOW,
     pool_recycle=settings.DB_POOL_RECYCLE,
     pool_pre_ping=settings.DB_POOL_PRE_PING,
-    echo=False
+    echo=False,
 )
 
 AsyncSessionLocal = async_sessionmaker(
-    bind=mysql_engine,
-    autocommit=False,
-    autoflush=False,
-    expire_on_commit=False
+    bind=mysql_engine, autocommit=False, autoflush=False, expire_on_commit=False
 )
 
 Base = declarative_base()
+
 
 async def get_db() -> AsyncSession:
     async with AsyncSessionLocal() as session:

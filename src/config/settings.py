@@ -3,8 +3,11 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 ENV = os.getenv("ENV", "dev")
 
+
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=('.env', f".env.{ENV}"), env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=(".env", f".env.{ENV}"), env_file_encoding="utf-8", extra="ignore"
+    )
 
     ENV: str = "dev"
 

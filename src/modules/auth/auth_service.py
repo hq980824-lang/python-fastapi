@@ -18,7 +18,7 @@ class AuthService:
     async def send_code(self, redis: Redis, email: str) -> str:
         code = EmailUtil.generate_code()
 
-        if settings.ENV != 'dev':
+        if settings.ENV != "dev":
             try:
                 await asyncio.to_thread(EmailUtil.send_verify_code, email, code)
             except Exception:
@@ -27,7 +27,9 @@ class AuthService:
         await RedisUtil.set_value(redis, self._code_key(email), code, expire=5 * 60)
         return code
 
-    async def verify_and_login(self, redis: Redis, dto: EmailLoginDto, db: AsyncSession) -> str:
+    async def verify_and_login(
+        self, redis: Redis, dto: EmailLoginDto, db: AsyncSession
+    ) -> str:
         code = await RedisUtil.get_value(redis, self._code_key(dto.email))
         if code is None:
             raise ValueError("请先获取邮箱验证码")

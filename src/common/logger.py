@@ -1,4 +1,3 @@
-
 import json
 import logging
 
@@ -12,11 +11,12 @@ class JsonFormatter(logging.Formatter):
             "level": record.levelname,
             "logger": record.name,
             "msg": record.getMessage(),
-            "trace_id": trace_id_var.get()
+            "trace_id": trace_id_var.get(),
         }
         if record.exc_info:
             log["exc"] = self.formatException(record.exc_info)
         return json.dumps(log, ensure_ascii=False)
+
 
 def setup_logging():
     handler = logging.StreamHandler()

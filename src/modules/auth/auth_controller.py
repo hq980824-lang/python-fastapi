@@ -11,8 +11,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 router = create_router(prefix="/auth", tags=["登录鉴权"])
 
+
 def get_svc():
     return AuthService()
+
 
 @router.post("/send-code")
 async def send_email_code(
@@ -21,7 +23,8 @@ async def send_email_code(
     svc: AuthService = Depends(get_svc),
 ):
     code = await svc.send_code(redis, dto.email)
-    return code if settings.ENV == 'dev' else "验证码已发送，请查收邮箱"
+    return code if settings.ENV == "dev" else "验证码已发送，请查收邮箱"
+
 
 @router.post("/login")
 async def email_login(
@@ -31,6 +34,4 @@ async def email_login(
     db: AsyncSession = Depends(get_db),
 ):
     token = await svc.verify_and_login(redis, dto, db)
-    return {
-        "token": f"Bearer {token}"
-    }
+    return {"token": f"Bearer {token}"}

@@ -1,9 +1,13 @@
+from io import BytesIO
+from fastapi import UploadFile
+from openpyxl import load_workbook
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from src.common.pagination import PageQuery
-from src.modules.posts.post_dto import PostBatchCreate, PostCreate, PostResp, PostUpdate
+from src.modules.posts.post_dto import PostBatchCreate, PostCreate, PostUpdate
 from src.modules.posts.post_model import PostDB
+from src.modules.users.user_model import UserDB
 
 
 class PostService:
@@ -23,7 +27,9 @@ class PostService:
         result = await db.execute(stmt)
         return result.scalars().first()
 
-    async def get_all(self, db: AsyncSession, params: PageQuery, author_id: int | None = None):
+    async def get_all(
+        self, db: AsyncSession, params: PageQuery, author_id: int | None = None
+    ):
         total_stmt = select(func.count(PostDB.id))
 
         if author_id is not None:
@@ -32,10 +38,12 @@ class PostService:
         total = await db.scalar(total_stmt)
 
         offset = (params.page - 1) * params.size
-        stmt = (select(PostDB)
-               .options(selectinload(PostDB.author))
-               .offset(offset)
-               .limit(params.size))
+        stmt = (
+            select(PostDB)
+            .options(selectinload(PostDB.author))
+            .offset(offset)
+            .limit(params.size)
+        )
 
         if author_id is not None:
             stmt = stmt.where(PostDB.author_id == author_id)
@@ -47,7 +55,7 @@ class PostService:
             "records": records,
             "total": total,
             "page": params.page,
-            "size": params.size
+            "size": params.size,
         }
 
     async def update_post(self, db: AsyncSession, payload: PostUpdate, db_post: PostDB):
@@ -55,7 +63,7 @@ class PostService:
 
         for key, value in update_dict.items():
             setattr(db_post, key, value)
-        
+
         await db.commit()
         return await self.get_by_id(db, db_post.id)
 
@@ -63,9 +71,13 @@ class PostService:
         await db.delete(db_post)
         await db.commit()
         return True
-            
-    async def create_batch(self, db: AsyncSession, payloads: PostBatchCreate, author_id: int):
-        new_posts = [PostDB(**p.model_dump(), author_id = author_id) for p in payloads.posts]
+
+    async def create_batch(
+        self, db: AsyncSession, payloads: PostBatchCreate, author_id: int
+    ):
+        new_posts = [
+            PostDB(**p.model_dump(), author_id=author_id) for p in payloads.posts
+        ]
         db.add_all(new_posts)
         await db.commit()
 
@@ -73,3 +85,41 @@ class PostService:
         stmt = select(PostDB).where(PostDB.id.in_(ids))
         result = await db.execute(stmt)
         return result.scalars().all()
+
+    async def import_from_excel(self, db: AsyncSession, file: UploadFile):
+        content = await file.read()
+        workbook = load_workbook(BytesIO(content))
+        sheet = workbook.active
+        emails = []
+        for row in sheet.iter_rows(min_row=2, values_only=True):
+            title, content, email = row
+        if email and email not in emails:
+            emails.append(email)
+
+        stmt = select(UserDB).where(UserDB.email.in_(emails))
+        users = (await db.execute(stmt)).scalars().all()
+
+        email_to_user = {user.email: user for user in users}
+
+        to_create = []
+        errors = []
+
+        for idx, row in enumerate(
+            sheet.iter_rows(min_row=2, values_only=True), start=2
+        ):
+            title, content, email = row
+
+            if not title:
+                errors.append({"行": idx, "原因": "标题为空"})
+                continue
+
+            author = email_to_user.get(email)
+            if author is None:
+                errors.append({"行": idx, "原因": f"作者不存在：{email}"})
+                continue
+
+            to_create.append(PostDB(title=title, content=content, author_id=author.id))
+
+        db.add_all(to_create)
+        await db.commit()
+        return {"成功": len(to_create), "失败": len(errors), "失败详情": errors}

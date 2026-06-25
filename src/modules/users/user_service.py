@@ -5,6 +5,7 @@ from src.common.pagination import PageQuery
 from src.modules.users.user_dto import UserCreate, UserUpdate
 from src.modules.users.user_model import UserDB
 
+
 class UserService:
     async def create(self, db: AsyncSession, payload: UserCreate):
         new_user = UserDB(**payload.model_dump())
@@ -34,12 +35,12 @@ class UserService:
         stmt = select(UserDB).offset(offset).limit(params.size)
         result = await db.execute(stmt)
         records = result.scalars().all()
-        
+
         return {
             "records": records,
             "total": total,
             "page": params.page,
-            "size": params.size
+            "size": params.size,
         }
 
     async def update_by_id(self, db: AsyncSession, user_id: int, payload: UserUpdate):
