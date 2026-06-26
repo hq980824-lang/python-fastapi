@@ -10,6 +10,7 @@ from src.config.db import Base
 # 导入所有 model，让 Base.metadata 能感知到它们
 import src.modules.users.user_model  # noqa
 import src.modules.posts.post_model  # noqa
+import src.modules.likes.like_model # noqa
 
 config = context.config
 if config.config_file_name is not None:

@@ -41,6 +41,7 @@ class PostUpdate(BaseModel):
 class PostBatchCreate(BaseModel):
     posts: list[PostCreate]
 
+
 class ImportResult(BaseModel):
     success: int
     failed: int

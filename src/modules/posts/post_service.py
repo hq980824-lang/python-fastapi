@@ -88,7 +88,7 @@ class PostService:
 
     async def import_from_excel(self, db: AsyncSession, file: UploadFile):
         if not file.filename.endswith(".xlsx"):
-            raise ValueError('只支持 .xlsx 格式的文件')
+            raise ValueError("只支持 .xlsx 格式的文件")
 
         content = await file.read()
         workbook = load_workbook(BytesIO(content))
@@ -109,7 +109,7 @@ class PostService:
 
         for idx, row in enumerate(data, start=2):
             if len(row) < 3:
-                errors.append({ "行": idx, "原因": "列数不足"})
+                errors.append({"行": idx, "原因": "列数不足"})
                 continue
 
             title, content, email = row[0], row[1], row[2]
@@ -126,25 +126,20 @@ class PostService:
             to_create.append(PostDB(title=title, content=content, author_id=author.id))
 
         if not to_create and not errors:
-            raise ValueError('文件中没有数据行')
+            raise ValueError("文件中没有数据行")
 
         db.add_all(to_create)
         await db.commit()
         return {"success": len(to_create), "failed": len(errors), "errors": errors}
- 
+
     async def get_all_for_export(self, db: AsyncSession):
-        stmt = (
-          select(PostDB)
-          .options(selectinload(PostDB.author))  
-          .order_by(PostDB.id)                   
-        )
+        stmt = select(PostDB).options(selectinload(PostDB.author)).order_by(PostDB.id)
         result = await db.execute(stmt)
         return result.scalars().all()
 
-    
     async def export_to_excel(self, db: AsyncSession):
         db_posts = await self.get_all_for_export(db)
-        
+
         wb = Workbook()
         ws = wb.active
         ws.append(["标题", "内容", "作者邮箱", "状态"])
