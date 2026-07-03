@@ -15,6 +15,8 @@ from src.modules.users.user_controller import router as user_router
 from src.modules.auth.auth_controller import router as auth_router
 from src.modules.posts.post_controller import router as post_router
 from src.modules.likes.like_controller import router as like_router
+from src.modules.friendship.friendship_controller import router as friendship_router
+from src.modules.weather.weather_controller import router as weather_router
 
 logger = logging.getLogger(__name__)
 
@@ -72,6 +74,8 @@ app.include_router(user_router)
 app.include_router(auth_router)
 app.include_router(post_router)
 app.include_router(like_router)
+app.include_router(friendship_router)
+app.include_router(weather_router)
 app.include_router(health_router)
 
 app.add_exception_handler(HTTPException, http_err_handler)

@@ -11,6 +11,9 @@ from src.config.db import Base
 import src.modules.users.user_model  # noqa
 import src.modules.posts.post_model  # noqa
 import src.modules.likes.like_model # noqa
+import src.modules.friendship.friendship_model # noqa
+import src.modules.weather.weather_model # noqa
+import src.modules.location.location_model  # noqa
 
 config = context.config
 if config.config_file_name is not None:

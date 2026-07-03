@@ -43,6 +43,11 @@ class Settings(BaseSettings):
 
     CORS_ALLOW_ORIGINS: str = ""
 
+    HE_FENG_API_HOST: str
+    HE_FENG_KID: str
+    HE_FENG_SID: str
+    HE_FENG_ALGORITHM: str
+
     @property
     def mysql_url(self):
         # mysql+aiomysql://用户名:密码@地址:端口/数据库名?charset=utf8mb4
@@ -64,5 +69,12 @@ class Settings(BaseSettings):
             return []
         return [o.strip() for o in self.CORS_ALLOW_ORIGINS.split(",")]
 
+    @property
+    def he_feng_bem(self):
+        return "/Users/huangqiang/fj-app-pc/python-fastapi/weather/ed25519-private.pem"
+
+    @property
+    def he_feng_api_prefix(self):
+        return f"https://{self.HE_FENG_API_HOST}/"
 
 settings = Settings()
